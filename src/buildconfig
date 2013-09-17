@@ -1,0 +1,25 @@
+
+LLVM_INSTALL_PATH = /mnt/storage/development/cpp/llvm/checkout/install
+
+
+INCLUDES = -I. -I.. -I$(LLVM_INSTALL_PATH)/include
+
+
+LIB_PATH = -L$(LLVM_INSTALL_PATH)/lib
+
+	      
+LIBS_LLVM = -lLLVMOption -lLLVMLinker -lLLVMIRReader -lLLVMipo -lLLVMVectorize -lLLVMInstrumentation -lLLVMBitWriter -lLLVMBitReader -lLLVMAsmParser -lLLVMX86Disassembler \
+			-lLLVMX86AsmParser -lLLVMX86CodeGen -lLLVMSelectionDAG -lLLVMAsmPrinter -lLLVMMCParser -lLLVMInterpreter -lLLVMJIT -lLLVMRuntimeDyld -lLLVMExecutionEngine -lLLVMCodeGen \
+			-lLLVMObjCARCOpts -lLLVMScalarOpts -lLLVMInstCombine \
+			-lLLVMTransformUtils -lLLVMipa -lLLVMAnalysis -lLLVMX86Desc -lLLVMX86Info -lLLVMTarget -lLLVMX86AsmPrinter -lLLVMMC -lLLVMObject -lLLVMX86Utils -lLLVMCore -lLLVMSupport -ltcmalloc
+	      
+	      
+LIBS_CLANG = -lclangFrontendTool -lclangFrontend -lclangDriver -lclangSerialization -lclangCodeGen -lclangParse -lclangSema -lclangStaticAnalyzerFrontend \
+			-lclangStaticAnalyzerCheckers -lclangStaticAnalyzerCore -lclangARCMigrate -lclangRewriteFrontend -lclangRewriteCore -lclangAnalysis -lclangEdit -lclangAST -lclangLex -lclangBasic 
+
+LIBS_GENERAL = -lz -lpthread -ltinfo -lrt -ldl -lm
+
+
+BUIL_FLAGS =  -D_DEBUG -D_GNU_SOURCE -D__STDC_CONSTANT_MACROS -D__STDC_FORMAT_MACROS -D__STDC_LIMIT_MACROS -O3 -fomit-frame-pointer \
+	    -fvisibility-inlines-hidden -fno-exceptions -fno-rtti -fPIC -Woverloaded-virtual -Wcast-qual    -pedantic -Wno-long-long -Wall -W -Wno-unused-parameter -Wwrite-strings    -Wno-maybe-uninitialized \
+	    -Wno-missing-field-initializers 
