@@ -1,5 +1,3 @@
-all : main
-
 include ../buildconfig
 
 SOURCES=main.cpp
