@@ -134,12 +134,14 @@ int main(int argc, char **argv)
 	clang::DiagnosticsEngine Diags(pDiagIDs, &*DiagOpts, DiagClient);    //had false at the end??
 
 	//ins: _ClangExecutable, _DefaultTargetTriple, _DefaultImageName, _Diags
-//	std::string Path = "/mnt/storage/workspaces/yuk_dev/llvm_testProject/src/clang_interpreter/aa";
 	clang::driver::Driver TheDriver("", llvm::sys::getProcessTriple(), "a.out", Diags);    // Encapsulate logic for constructing compilation processes from a set of gcc-driver-like command line arguments
+
+	TheDriver.setCheckInputsExist(false);
+
 	TheDriver.setTitle("cppjittest");
 
 	llvm::SmallVector<const char *, 16> Args(argv, argv + argc);
-	Args.push_back("test.cpp");
+	Args.push_back("DUMMY.cpp");
 	Args.push_back("-fsyntax-only");
 	llvm::OwningPtr<clang::driver::Compilation> C(TheDriver.BuildCompilation(Args));    //Construct a compilation object for a command line argument vector.
 	if (!C)
@@ -169,15 +171,15 @@ int main(int argc, char **argv)
 
 	// Initialize a compiler invocation object from the clang (-cc1) arguments. helper class for holding the data necessary to invoke the compile
 	const clang::driver::ArgStringList &CCArgs = Cmd->getArguments();
-	//nasty fix to remove -disable-free, otherwise leaks
+	//nasty way to get rid of -disable-free (causes leak)
 	clang::driver::ArgStringList newArgList;
 	for(unsigned int i = 0; i < CCArgs.size(); ++i)
 	{
 		if("-disable-free" == CCArgs[i])
 			continue;
 		newArgList.push_back(CCArgs[i]);
-
 	}
+
 
 	llvm::OwningPtr<clang::CompilerInvocation> CI(new clang::CompilerInvocation);
 	clang::CompilerInvocation::CreateFromArgs(*CI, const_cast<const char **>(newArgList.data()),
@@ -213,9 +215,34 @@ int main(int argc, char **argv)
 		return 1;
 	}
 
-	//! @warning hardcoded path!!!!
+	//****----****----****----****----****----****----****----****----****----****----****----****----****----****----****----****----//
+	//! @warning HARDCORED PATH!!!!
 	Clang.getHeaderSearchOpts().AddPath("/mnt/storage/development/cpp/llvm/checkout/install/lib/clang/3.4/include", clang::frontend::Angled, false, false);
-	// ----//
+	//****----****----****----****----****----****----****----****----****----****----****----****----****----****----****----****----//
+
+	//here we swap the dummyfile with a memory buffer
+	clang::PreprocessorOptions & opts = Clang.getInvocation().getPreprocessorOpts();
+	std::string testString = "#include <stdio.h>\n"
+		"int test(int a, int b){"
+		"printf(\"\\n\\ninside JITTED function!!!!\\n\");"
+		"return (b * (5 + 2)) * (a * (5 + 2));}";
+
+	//do not delete the buffer
+	llvm::MemoryBuffer * Buf(llvm::MemoryBuffer::getMemBufferCopy(testString, "testBuffer"));
+	if (!Buf)
+	{
+		printf("failed to create membuffer\n");
+		return 1;
+	}
+#ifdef _DEBUG
+	llvm::errs() << "size : " << Buf->getBufferSize() << "\n";
+	llvm::errs() << "start : " << Buf->getBufferStart() << "\n";
+	llvm::errs() << "end : " << Buf->getBufferEnd() << "\n";
+	llvm::errs() << "buffer : " << Buf->getBuffer() << "\n";
+#endif
+	opts.addRemappedFile ("DUMMY.cpp", Buf);
+
+
 
 	// Create and execute the frontend to generate an LLVM bitcode module.
 	llvm::OwningPtr<clang::CodeGenAction> Act(new clang::EmitLLVMOnlyAction());
@@ -235,6 +262,8 @@ int main(int argc, char **argv)
 
 
 	C->getJobs().clear();
+
+	opts.clearRemappedFiles();
 
 	llvm::llvm_shutdown();
 
